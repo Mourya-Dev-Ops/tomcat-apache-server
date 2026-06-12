@@ -46,7 +46,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "Moving WAR to Tomcat webapps..."
-            sudo mv /tmp/target/*.war /opt/maven/webapps/
+            sudo cp /tmp/target/*.war /opt/apache-tomcat-9.0.118/webapps/
             echo "Restarting Tomcat..."
             sudo systemctl restart tomcat
             sleep 5
