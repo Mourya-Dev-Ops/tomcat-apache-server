@@ -599,3 +599,614 @@ Application Becomes Live
 Access Through Browser
 ```
 
+
+
+
+
+# Jenkins CI/CD Pipeline for Apache Tomcat WAR Deployment
+
+## Project Architecture
+
+```text
+GitHub Repository
+        │
+        ▼
+Jenkins EC2 Server
+        │
+        ▼
+Maven Build
+        │
+        ▼
+WAR File Creation
+        │
+        ▼
+SSH / SCP
+        │
+        ▼
+Tomcat EC2 Server
+        │
+        ▼
+Apache Tomcat Deployment
+```
+
+---
+
+# Phase 1: Create Jenkins EC2 Instance
+
+Launch a new Ubuntu EC2 instance.
+
+Recommended:
+
+```text
+AMI        : Ubuntu 26.04 LTS
+Instance   : t2.micro
+Storage    : 8 GB
+```
+
+Security Group:
+
+```text
+22   SSH
+8080 Jenkins
+```
+
+---
+
+# Phase 2: Connect to Jenkins Server
+
+From local machine:
+
+```bash
+ssh -i jenkins-key.pem ubuntu@<JENKINS_PUBLIC_IP>
+```
+
+Switch to root:
+
+```bash
+sudo -i
+```
+
+Verify:
+
+```bash
+whoami
+```
+
+Expected:
+
+```text
+root
+```
+
+---
+
+# Phase 3: Install Java 21
+
+Update packages:
+
+```bash
+apt update
+```
+
+Install OpenJDK 21:
+
+```bash
+apt install openjdk-21-jdk -y
+```
+
+Verify:
+
+```bash
+java -version
+```
+
+Expected:
+
+```text
+openjdk version "21"
+```
+
+Why?
+
+```text
+Latest Jenkins requires Java 21.
+Java 17 causes Jenkins startup failure.
+```
+
+---
+
+# Phase 4: Install Jenkins Repository
+
+Add Jenkins Key:
+
+```bash
+wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+```
+
+Add Repository:
+
+```bash
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] \
+https://pkg.jenkins.io/debian-stable binary/" \
+> /etc/apt/sources.list.d/jenkins.list
+```
+
+Update:
+
+```bash
+apt update
+```
+
+Install Jenkins:
+
+```bash
+apt install jenkins -y
+```
+
+---
+
+# Phase 5: Start Jenkins
+
+Enable service:
+
+```bash
+systemctl enable jenkins
+```
+
+Start service:
+
+```bash
+systemctl start jenkins
+```
+
+Check status:
+
+```bash
+systemctl status jenkins
+```
+
+Expected:
+
+```text
+active (running)
+```
+
+---
+
+# Phase 6: Get Jenkins Initial Password
+
+```bash
+cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Copy the password.
+
+Open:
+
+```text
+http://<JENKINS_PUBLIC_IP>:8080
+```
+
+Paste password.
+
+Install suggested plugins.
+
+Create admin user.
+
+---
+
+# Phase 7: Install Maven
+
+```bash
+apt install maven -y
+```
+
+Verify:
+
+```bash
+mvn --version
+```
+
+Expected:
+
+```text
+Apache Maven 3.x
+Java version: 21
+```
+
+Why?
+
+```text
+Maven builds Java applications and creates WAR files.
+```
+
+---
+
+# Phase 8: Install Git
+
+```bash
+apt install git -y
+```
+
+Verify:
+
+```bash
+git --version
+```
+
+Expected:
+
+```text
+git version 2.x
+```
+
+Why?
+
+```text
+Jenkins pulls source code from GitHub.
+```
+
+---
+
+# Phase 9: Create Jenkins Job
+
+Dashboard:
+
+```text
+New Item
+```
+
+Choose:
+
+```text
+Freestyle Project
+```
+
+Name:
+
+```text
+tomcat-apache-server
+```
+
+---
+
+# Phase 10: Configure Git Repository
+
+Git URL:
+
+```text
+https://github.com/Mourya-Dev-Ops/tomcat-apache-server.git
+```
+
+Branch:
+
+```text
+*/main
+```
+
+Why?
+
+```text
+Repository branch is main.
+master causes clone failures.
+```
+
+---
+
+# Phase 11: Configure Maven Build
+
+Build Step:
+
+```text
+Invoke top-level Maven targets
+```
+
+Goals:
+
+```text
+clean package
+```
+
+Why?
+
+```text
+clean   → removes old builds
+package → creates WAR file
+```
+
+Save.
+
+---
+
+# Phase 12: Build Project
+
+Click:
+
+```text
+Build Now
+```
+
+Verify:
+
+```text
+Build History
+```
+
+Open Console Output.
+
+Expected:
+
+```text
+BUILD SUCCESS
+```
+
+---
+
+# Phase 13: Verify WAR File
+
+Login Jenkins Server:
+
+```bash
+sudo su - jenkins
+```
+
+Go to workspace:
+
+```bash
+cd /var/lib/jenkins/workspace/tomcat-apache-server/target
+```
+
+Check WAR:
+
+```bash
+ls
+```
+
+Expected:
+
+```text
+DevOps-CICD-war-0.1.war
+```
+
+Absolute Path:
+
+```bash
+realpath DevOps-CICD-war-0.1.war
+```
+
+Example:
+
+```bash
+/var/lib/jenkins/workspace/tomcat-apache-server/target/DevOps-CICD-war-0.1.war
+```
+
+---
+
+# Phase 14: Generate Jenkins SSH Key
+
+Switch to Jenkins user:
+
+```bash
+sudo su - jenkins
+```
+
+Generate Key:
+
+```bash
+ssh-keygen -t ed25519 -C "jenkins@ec2"
+```
+
+Accept defaults.
+
+Verify:
+
+```bash
+ls ~/.ssh
+```
+
+Expected:
+
+```text
+id_ed25519
+id_ed25519.pub
+```
+
+View Public Key:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Example:
+
+```text
+ssh-ed25519 AAAA..... jenkins@ec2
+```
+
+Why?
+
+```text
+Jenkins must SSH into Tomcat server automatically.
+```
+
+---
+
+# Phase 15: Configure SSH Trust
+
+Login to Tomcat Server:
+
+```bash
+ssh -i nginx-key.pem ubuntu@<TOMCAT_PUBLIC_IP>
+```
+
+Become root:
+
+```bash
+sudo -i
+```
+
+Open:
+
+```bash
+nano ~/.ssh/authorized_keys
+```
+
+Paste Jenkins Public Key.
+
+Example:
+
+```text
+ssh-ed25519 AAAA..... jenkins@ec2
+```
+
+Save.
+
+Fix permissions:
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+---
+
+# Phase 16: Test SSH
+
+From Jenkins:
+
+```bash
+ssh root@<TOMCAT_PUBLIC_IP>
+```
+
+Expected:
+
+```text
+root@ip-xxx-xxx-xxx#
+```
+
+No password should be requested.
+
+Why?
+
+```text
+SSH key authentication is working.
+```
+
+---
+
+# Phase 17: Copy WAR to Tomcat
+
+From Jenkins:
+
+```bash
+scp /var/lib/jenkins/workspace/tomcat-apache-server/target/DevOps-CICD-war-0.1.war \
+root@<TOMCAT_PUBLIC_IP>:/tmp/
+```
+
+Verify on Tomcat:
+
+```bash
+ls -lh /tmp/*.war
+```
+
+Expected:
+
+```text
+DevOps-CICD-war-0.1.war
+```
+
+---
+
+# Phase 18: Deploy WAR
+
+Copy:
+
+```bash
+cp /tmp/DevOps-CICD-war-0.1.war \
+/opt/apache-tomcat-9.0.118/webapps/
+```
+
+Verify:
+
+```bash
+ls /opt/apache-tomcat-9.0.118/webapps
+```
+
+Expected:
+
+```text
+DevOps-CICD-war-0.1
+DevOps-CICD-war-0.1.war
+```
+
+Why?
+
+```text
+Tomcat automatically extracts WAR files.
+```
+
+---
+
+# Phase 19: Verify Deployment
+
+Check logs:
+
+```bash
+tail -50 /opt/apache-tomcat-9.0.118/logs/catalina.out
+```
+
+Expected:
+
+```text
+Deploying web application archive
+Deployment finished
+```
+
+---
+
+# Phase 20: Access Application
+
+Browser:
+
+```text
+http://<TOMCAT_PUBLIC_IP>:8080/DevOps-CICD-war-0.1
+```
+
+Expected:
+
+```text
+Welcome DevOps CICD Flow Youtube Channel
+```
+
+---
+
+# Final Flow
+
+```text
+Developer
+    │
+    ▼
+GitHub
+    │
+    ▼
+Jenkins
+    │
+    ▼
+Git Clone
+    │
+    ▼
+Maven Build
+    │
+    ▼
+WAR File
+    │
+    ▼
+SSH/SCP
+    │
+    ▼
+Tomcat
+    │
+    ▼
+Application Deployment
+```
