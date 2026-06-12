@@ -27,3 +27,31 @@ jobs:
         run: |
           echo "Listing WAR files:"
           find . -name "*.war"
+
+      - name: Upload WAR file via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.TOMCAT_HOST }}
+          username: ${{ secrets.TOMCAT_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "target/*.war"
+          target: "/tmp/"
+
+      - name: Deploy WAR to Tomcat
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.TOMCAT_HOST }}
+          username: ${{ secrets.TOMCAT_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Copying WAR file to Tomcat webapps..."
+
+            cp /tmp/target/*.war /opt/apache-tomcat-9.0.118/webapps/
+
+            echo "Waiting for Tomcat to extract WAR..."
+            sleep 10
+
+            echo "Verifying deployment..."
+            ls -la /opt/apache-tomcat-9.0.118/webapps/
+
+            echo "Deployment completed successfully!"
