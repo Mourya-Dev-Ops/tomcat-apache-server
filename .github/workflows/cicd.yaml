@@ -1,54 +1,68 @@
 name: Build and Deploy WAR to Apache Tomcat
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+push:
+branches:
+- main
+workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+build-and-deploy:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+```
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      java-version: '17'
+      distribution: 'temurin'
 
-      - name: Build WAR package
-        run: |
-          mvn clean package -DskipTests
+  - name: Build WAR package
+    run: |
+      mvn clean package -DskipTests
 
-      - name: Verify WAR file location
-        run: |
-          echo "Listing WAR files:"
-          find . -name "*.war" || echo "No WAR files found!"
+  - name: Verify WAR file location
+    run: |
+      echo "Listing WAR files:"
+      find . -name "*.war"
 
-      - name: Upload WAR file via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.TOMCAT_HOST }}
-          username: ${{ secrets.TOMCAT_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "target/*.war"
-          target: "/tmp/"
+  - name: Upload WAR file via SCP
+    uses: appleboy/scp-action@v0.1.7
+    with:
+      host: ${{ secrets.TOMCAT_HOST }}
+      username: ${{ secrets.TOMCAT_USER }}
+      key: ${{ secrets.SSH_PRIVATE_KEY }}
+      source: "target/DevOps-CICD-war-0.1.war"
+      target: "/tmp"
+      overwrite: true
+      debug: true
 
-      - name: Move WAR to Tomcat webapps & restart
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.TOMCAT_HOST }}
-          username: ${{ secrets.TOMCAT_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            echo "Moving WAR to Tomcat webapps..."
-            sudo cp /tmp/target/*.war /opt/apache-tomcat-9.0.118/webapps/
-            echo "Restarting Tomcat..."
-            sudo systemctl restart tomcat
-            sleep 5
-            sudo systemctl status tomcat --no-pager
-            echo "✅ Deployment complete!"
+  - name: Move WAR to Tomcat webapps & restart
+    uses: appleboy/ssh-action@v1.1.0
+    with:
+      host: ${{ secrets.TOMCAT_HOST }}
+      username: ${{ secrets.TOMCAT_USER }}
+      key: ${{ secrets.SSH_PRIVATE_KEY }}
+      script: |
+        echo "Stopping Tomcat..."
+        /opt/apache-tomcat-9.0.118/bin/shutdown.sh || true
+
+        sleep 10
+
+        echo "Copying WAR file..."
+        cp /tmp/DevOps-CICD-war-0.1.war /opt/apache-tomcat-9.0.118/webapps/
+
+        echo "Starting Tomcat..."
+        /opt/apache-tomcat-9.0.118/bin/startup.sh
+
+        sleep 15
+
+        echo "WAR files in webapps:"
+        ls -lh /opt/apache-tomcat-9.0.118/webapps/
+
+        echo "Deployment completed successfully!"
+```
