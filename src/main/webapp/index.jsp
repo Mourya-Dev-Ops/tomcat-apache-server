@@ -1,59 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>DevOps CI/CD Demo</title>
+
     <style>
-        body {
-            background-color: #0f172a;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 100px;
+        body{
+            background:#0f172a;
+            color:white;
+            font-family:Arial,sans-serif;
+            text-align:center;
+            margin-top:100px;
         }
 
-        .card {
-            background: #1e293b;
-            width: 600px;
-            margin: auto;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+        .card{
+            background:#1e293b;
+            width:650px;
+            margin:auto;
+            padding:30px;
+            border-radius:15px;
+            box-shadow:0 0 20px rgba(0,255,255,.3);
         }
 
-        h1 {
-            color: #38bdf8;
+        h1{
+            color:#38bdf8;
         }
 
-        .status {
-            color: #22c55e;
-            font-size: 24px;
-            font-weight: bold;
+        .status{
+            color:#22c55e;
+            font-size:24px;
+            font-weight:bold;
         }
 
-        .footer {
-            margin-top: 20px;
-            color: #94a3b8;
+        .footer{
+            margin-top:20px;
+            color:#94a3b8;
         }
     </style>
 </head>
+
 <body>
 
-    <div class="card">
-        <h1>🚀 DevOps CI/CD Pipeline Success</h1>
+<div class="card">
 
-        <p class="status">✅ Deployment Successful</p>
+<h1>🚀 DevOps CI/CD Pipeline Success</h1>
 
-        <h2>Pewwwww! It Worked 😎</h2>
+<p class="status">✅ Deployment Successful</p>
 
-        <p>
-            Testing Team Mates,<br>
-            Jenkins → Maven → WAR → Tomcat Pipeline is Working Successfully.
-        </p>
+<h2>Pewwwww! It Worked 😎</h2>
 
-        <div class="footer">
-            Built by Vikky using GitHub, Jenkins, Maven & Apache Tomcat
-        </div>
-    </div>
+<p>
+Testing Team Mates,<br>
+Jenkins → Maven → WAR → Tomcat Pipeline is Working Successfully.
+</p>
+
+<div class="footer">
+Built by Vikky using GitHub, Jenkins, Maven & Apache Tomcat
+</div>
+
+</div>
 
 </body>
 </html>
